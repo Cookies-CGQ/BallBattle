@@ -82,3 +82,5 @@ s.resp.reqkick = function(source, playerid, reason)
 
     return true
 end
+
+s.start(...)

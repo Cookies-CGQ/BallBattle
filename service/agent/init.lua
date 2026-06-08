@@ -43,3 +43,5 @@ s.client.work = function (msg)
     s.data.coin = s.data.coin + 1
     return {"work", s.data.coin}
 end
+
+s.start(...)

@@ -146,7 +146,6 @@ local process_msg = function(fd, msgstr)
         local nodecfg = runconfig[node]
         local loginid = math.random(1, #nodecfg.login) -- 随机选择一个login服务编号
         local login = "login" .. loginid -- login服务
-        print("test123 process_msg: ", login)
         skynet.send(login, "lua", "client", fd, cmd, msg)
     --已经完成登录流程
     else
