@@ -171,8 +171,38 @@ function update(frame)
     eat_update()     --碰撞检测
 end
 
+--设置随机数种子，避免生成的随机序列一致（解决不同scene情况下，生成的食物序列几乎一致且同步）
+local function seed_random()
+    local sceneid = tonumber(s.id) or 0
+
+    local addr = 0
+    local addrstr = skynet.address(skynet.self())  -- 通常是 ":00000011"
+    local hex = addrstr and addrstr:match(":(%x+)")
+
+    if hex then
+        addr = tonumber(hex, 16) or 0
+    else
+        addr = tonumber(skynet.self()) or 0
+    end
+
+    local seed = os.time() * 100000
+        + skynet.now()
+        + sceneid * 10007
+        + addr
+
+    seed = seed % 2147483647
+
+    math.randomseed(seed)
+
+    for i = 1, 10 do
+        math.random()
+    end
+end
+
 --服务初始化时开启一个死循环协程，协程中调用updat，定时器功能使用协程搭配skynet.sleep实现让他等待一小段时间
 s.init = function()
+    --设置随机数种子
+    seed_random()
     skynet.fork(function()
         --保持帧率执行
         local stime = skynet.now()
