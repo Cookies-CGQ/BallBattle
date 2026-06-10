@@ -67,7 +67,7 @@ function broadcast(msg)
 end
 
 --注册远程调用-agent服务向scene服务发起请求，玩家进入战斗场景
-s.resp.enter = function (source, playerid, agent, node)
+s.resp.enter = function (source, playerid, node, agent)
     --判断能否进入战斗场景，如果已经在当前战斗场景，就不可再次加入，返回进入失败信息
     if balls[playerid] then
         return false
@@ -83,7 +83,7 @@ s.resp.enter = function (source, playerid, agent, node)
     --将ball对象加入balls表 
     balls[playerid] = b
     --向请求进入的玩家回应成功进入的信息
-    local ret_msg = {"enter", 0, "进入成功"}
+    local ret_msg = {"enter", 0, "进入成功 "}
     s.send(node, b.agent, "send", ret_msg)
     --向请求进入的玩家发送战场信息
     s.send(node, b.agent, "send", balllist_msg())
@@ -110,13 +110,13 @@ s.resp.shift = function (source, playerid, x, y)
     if not b then
         return false
     end
-    b.speedx = x
-    b.speedy = y
+    b.speedx = tonumber(x) --注意要字符串转数字，不让判断逻辑有bug
+    b.speedy = tonumber(y)
 end
 
 --位置更新
 function move_update()
-    for i,v in pairs(balls) do
+    for i, v in pairs(balls) do
         v.x = v.x + v.speedx * 0.2
         v.y = v.y + v.speedy * 0.2
         if v.speedx ~= 0 or v.speedy ~= 0 then
@@ -172,21 +172,24 @@ function update(frame)
 end
 
 --服务初始化时开启一个死循环协程，协程中调用updat，定时器功能使用协程搭配skynet.sleep实现让他等待一小段时间
-s.init = function ()
-    --保持帧率执行
-    local stime = skynet.now()
-    local frame = 0
-    while true do
-        frame = frame + 1
-        local isok, err = pcall(update, frame)
-        if not isok then
-            skynet.error(err)
+s.init = function()
+    skynet.fork(function()
+        --保持帧率执行
+        local stime = skynet.now()
+        local frame = 0
+        while true do
+            frame = frame + 1
+            local isok, err = pcall(update, frame)
+            if not isok then
+                skynet.error(err)
+            end
+            local etime = skynet.now()
+            local waittime = frame*20 - (etime - stime)
+            if waittime <= 0 then
+                waittime = 2
+            end
+            skynet.sleep(waittime)
         end
-        local etime = skynet.now()
-        local waittime = frame * 20 - (etime - stime)
-        if waittime <= 0 then
-            waittime = 2
-        end
-        skynet.sleep(waittime)
-    end
+    end)
 end
+s.start(...)
